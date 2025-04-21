@@ -1,15 +1,8 @@
-import json
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-def importIVList():
-    with open("iv.json", "r") as file:
-        return json.loads(file.read())
-    
-def exportOutput(l):
-    with open("output.json", "w") as file:
-        json.dump(l, file, indent=1)
+from filesUtils import exportErrors, exportOutput, importYahooAssetData
 
 def create_driver():
     options = Options()
@@ -22,7 +15,7 @@ def create_driver():
     service = Service(executable_path='C:\\Users\\cvp14567\\Downloads\\chromedriver.exe')
     return webdriver.Chrome(service=service, options=options)
 
-def fetch_data_for_asset(driver, ticker):
+def fetch_fundamentals(driver, ticker):
     js_code = f"""
     return (async () => {{
         const output = {{
@@ -71,7 +64,7 @@ def fetch_data_for_asset(driver, ticker):
     """
     return driver.execute_script(js_code)
 
-def get():
+def start():
     def areDebtValuesValid(d):
         if( 
             (not d[0] or d[0] > 0) and
@@ -91,18 +84,21 @@ def get():
     driver = create_driver()
     driver.get("https://statusinvest.com.br")
     selectedAssets = []
-    ivList = importIVList()['data']
-    print(len(ivList))
-    input('start?')
+    assets = importYahooAssetData()[:100]
+    print(len(assets))
 
-    for index,asset in enumerate(ivList):
-        ticker = asset['symbol']
-        print(str(index+1)+f" Fetching data for: {ticker}")
-        data = fetch_data_for_asset(driver, ticker)
+    for index,asset in enumerate(assets):
+        errors = []
+        print(str(index+1)+f" Fetching data for: {asset['ticker']}")
+        fundamentalsData = fetch_fundamentals(driver, asset['ticker'])
         try:
-            if data['results'] and all(n > 0 for n in data['results']) and areDebtValuesValid(data['debts']):
-                selectedAssets.append(ticker)
-        except:
+            if (fundamentalsData['results'] and 
+            all(n > 0 for n in fundamentalsData['results']) and 
+            areDebtValuesValid(fundamentalsData['debts'])):
+                selectedAssets.append(asset)
+
+        except Exception as error:
+            errors.append(error)
             continue
     
     exportOutput(selectedAssets)
@@ -110,4 +106,4 @@ def get():
     driver.quit()
 
 if __name__ == '__main__':
-    get()
+    start()
