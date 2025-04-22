@@ -1,4 +1,4 @@
-const xpath = '/html/body/div[3]/main/div/div[2]/div/div[4]/div[2]/div[2]/div/div/table/tbody';
+const xpath = '/html/body/div[3]/main/div/div/div/div[2]/div/div/div[2]/div/table/tbody';
 const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
 const tbody = result.singleNodeValue;
 
@@ -9,10 +9,11 @@ if (tbody) {
   // Extract the codes
   const codes = Array.from(rows)
     .map(row => row.getAttribute('data-rowkey'))
-    .filter(key => key.includes(':'))
-    .map(key => key.split(':')[1]);
+    .filter(key => key.includes(':') && !key.split(':')[1].includes('/'))
+    .map(key => key.split(':')[1].replace('.','-'));
 
   console.log(codes);
 } else {
   console.warn("XPath didn't match any element.");
 }
+//https://www.tradingview.com/screener/
