@@ -30,7 +30,6 @@ def fetch_fundamentals(driver, ticker):
             const doc = parser.parseFromString(html, 'text/html');
 
             const xpaths = [
-                '/html/body/main/div[6]/div[1]/div[2]/div[6]/div/div/strong',
                 '/html/body/main/div[3]/div/div/div[2]/div/div[2]/div/div[1]/div/div/strong',
                 '/html/body/main/div[3]/div/div/div[2]/div/div[2]/div/div[2]/div/div/strong',
                 '/html/body/main/div[3]/div/div/div[2]/div/div[2]/div/div[3]/div/div/strong',
@@ -68,15 +67,14 @@ def start():
     def areDebtValuesValid(d):
         if( 
             (not d[0] or d[0] > 0) and
-            (not d[1] or d[1] < 0) and
-            (not d[2] or d[2] < 1) and
+            (not d[1] or d[1] < 1) and
+            (not d[2] or d[2] < 2) and
             (not d[3] or d[3] < 2) and
-            (not d[4] or d[4] < 2) and
-            (not d[5] or d[5] > 0.4) and
-            (not d[6] or d[6] < 1) and
-            (not d[7] or d[7] > 1)
+            (not d[4] or d[4] > 0.4) and
+            (not d[5] or d[5] < 1) and
+            (not d[6] or d[6] > 1)
         ):
-            if(not d[0] and not d[1] and not d[2] and not d[3] and not d[4] and not d[5] and not d[6] and not d[7]):
+            if(not d[0] and not d[1] and not d[2] and not d[3] and not d[4] and not d[5] and not d[6]):
                 return False
             return True
         return False
@@ -84,13 +82,13 @@ def start():
     driver = create_driver()
     driver.get("https://statusinvest.com.br")
     selectedAssets = []
-    assets = importYahooAssetData()[:100]
+    assets = importYahooAssetData()
     print(len(assets))
 
     for index,asset in enumerate(assets):
         errors = []
-        print(str(index+1)+f" Fetching data for: {asset['ticker']}")
-        fundamentalsData = fetch_fundamentals(driver, asset['ticker'])
+        print(str(index+1)+f" Fetching data for: {asset[0]}")
+        fundamentalsData = fetch_fundamentals(driver, asset[0])
         try:
             if (fundamentalsData['results'] and 
             all(n > 0 for n in fundamentalsData['results']) and 

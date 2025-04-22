@@ -15,16 +15,16 @@ def generateData(index, ticker):
     avg_volatility_62d = total_volatility/62
 
     print(str(index) + ' ===> ' + ticker)
-    return {
-        'ticker': ticker,
-        'volume_index': index,
-        'vol_spike_ratio_2d': volatility_now/avg_volatility_62d,
-        'last_price': data['Close'].iloc[-1][0],
-        'market_cap': market_cap
-    }
+    return [
+        ticker,
+        index+1,
+        volatility_now/avg_volatility_62d,
+        data['Close'].iloc[-1][0],
+        market_cap
+    ]
 
 if __name__ == "__main__":
-    tickers = importTradingviewAssets()[:10]
+    tickers = importTradingviewAssets()
     results = []
     errors = []
     for i,v in enumerate(tickers):
