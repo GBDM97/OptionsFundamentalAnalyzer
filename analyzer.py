@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-from filesUtils import exportErrors, exportOutput, importYahooAssetData
+from filesUtils import exportOutput, importFile, importYahooAssetData
 
 def create_driver():
     options = Options()
@@ -17,7 +17,9 @@ def create_driver():
 
 def fetch_fundamentals(driver, ticker):
     js_code = f"""
-    return (async () => {{
+    const callback = arguments[arguments.length - 1]; // Needed for execute_async_script
+
+    (async () => {{
         const output = {{
             results: [],
             debts: []
@@ -50,18 +52,22 @@ def fetch_fundamentals(driver, ticker):
                 const jsonRes1 = await fetch(`https://statusinvest.com.br/stock/getincomestatment?companyid=${{companyId}}&type=1&futureData=false`);
                 const json0 = await jsonRes0.json();
                 const json1 = await jsonRes1.json();
-                output.debts.unshift(parseFloat(json0.data.grid[10].columns[1].value.replaceAll(',','.').replaceAll(' M','')))
+
+                output.debts.unshift(
+                    parseFloat(json0.data.grid[10].columns[1].value.replaceAll(',','.').replaceAll(' M',''))
+                );
+
                 output.results = json1.data.grid[18].gridLineModel.values;
             }}
 
-            return output;
+            callback(output); // THIS sends data back to Python
 
         }} catch (err) {{
-            return {{ error: err.message || 'Unknown error' }};
+            callback({{ error: err.message || 'Unknown error' }}); // Ensure error is returned too
         }}
     }})();
     """
-    return driver.execute_script(js_code)
+    return driver.execute_async_script(js_code)
 
 def start():
     def areDebtValuesValid(d):
@@ -78,23 +84,51 @@ def start():
                 return False
             return True
         return False
+    
+    def areDebtValuesInvalid(d):
+        if( 
+            (not d[0] or d[0] < 0) and
+            (not d[2] or d[2] > 2) and
+            (not d[3] or d[3] > 2) and
+            (not d[6] or d[6] < 1)
+        ):
+            if(not d[0] and not d[1] and not d[2] and not d[3] and not d[4] and not d[5] and not d[6]):
+                return False
+            return True
+        return False
+    
+    def getLastAnalyzedIndex(l, lastAsset):
+        for i,v in enumerate(l):
+            if v[0] == lastAsset:
+                return i
+        return 0
 
     driver = create_driver()
     driver.get("https://statusinvest.com.br")
     selectedAssets = []
     assets = importYahooAssetData()
+    outputFile = importFile('output')
+    lastRegisteredAsset = outputFile[-1][0] if outputFile else ''
+    lastIndex = getLastAnalyzedIndex(assets, lastRegisteredAsset)
     print(len(assets))
 
-    for index,asset in enumerate(assets):
+    for index,asset in enumerate(assets[lastIndex:], start=lastIndex):
         errors = []
         print(str(index+1)+f" Fetching data for: {asset[0]}")
         fundamentalsData = fetch_fundamentals(driver, asset[0])
         try:
-            if (fundamentalsData['results'] and 
-            all(n > 0 for n in fundamentalsData['results']) and 
-            areDebtValuesValid(fundamentalsData['debts'])):
-                selectedAssets.append(asset)
+            debtValid = areDebtValuesValid(fundamentalsData['debts'])
+            debtInvalid = areDebtValuesInvalid(fundamentalsData['debts'])
 
+            if (fundamentalsData['results']):
+                if (all(n > 0 for n in fundamentalsData['results']) and debtValid):
+                    asset.append('Good fundamentals')
+                    selectedAssets.append(asset)
+                if (any(n < 0 for n in fundamentalsData['results']) and debtInvalid):
+                    asset.append('Bad fundamentals')
+                    selectedAssets.append(asset)
+            if str(index)[-2:] == '00':
+                exportOutput(selectedAssets)
         except Exception as error:
             errors.append(error)
             continue

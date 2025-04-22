@@ -23,3 +23,7 @@ def exportErrors(l):
 def exportYahooAssetData(l):
     with open("data\\yahooAssetData.json", "w") as file:
         json.dump(l, file, indent=1)
+
+def importFile(fileName):
+    with open("data\\"+fileName+".json", "r") as file:
+        return json.loads(file.read())

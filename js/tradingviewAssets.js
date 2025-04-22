@@ -3,10 +3,7 @@ const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERE
 const tbody = result.singleNodeValue;
 
 if (tbody) {
-  // Find all <tr> inside the tbody that have a data-rowkey
   const rows = tbody.querySelectorAll('tr[data-rowkey]');
-  
-  // Extract the codes
   const codes = Array.from(rows)
     .map(row => row.getAttribute('data-rowkey'))
     .filter(key => key.includes(':') && !key.split(':')[1].includes('/'))
@@ -16,4 +13,5 @@ if (tbody) {
 } else {
   console.warn("XPath didn't match any element.");
 }
+
 //https://www.tradingview.com/screener/
