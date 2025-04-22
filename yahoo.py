@@ -4,7 +4,6 @@ from filesUtils import exportErrors, exportYahooAssetData, importTradingviewAsse
 
 def generateData(index, ticker):
     data = yf.download(ticker, period="62d", interval="1d")
-    market_cap = yf.Ticker(ticker).fast_info.get('marketCap')
     volatility_now = max(abs(data['High'].iloc[-1][0] - data['Low'].iloc[-2][0]), 
                              abs(data['Low'].iloc[-1][0] - data['High'].iloc[-2][0]))
     total_volatility = 0
@@ -15,12 +14,14 @@ def generateData(index, ticker):
     avg_volatility_62d = total_volatility/62
 
     print(str(index) + ' ===> ' + ticker)
+    spike_ratio = volatility_now/avg_volatility_62d
+    if spike_ratio < 1:
+        return None
     return [
         ticker,
         index+1,
-        volatility_now/avg_volatility_62d,
-        data['Close'].iloc[-1][0],
-        market_cap
+        spike_ratio,
+        data['Close'].iloc[-1][0]
     ]
 
 if __name__ == "__main__":
@@ -29,7 +30,9 @@ if __name__ == "__main__":
     errors = []
     for i,v in enumerate(tickers):
         try:
-            results.append(generateData(i, v))
+            result = generateData(i, v)
+            if result:
+                results.append(result)
         except Exception as error:
             errors.append(error)
             continue
