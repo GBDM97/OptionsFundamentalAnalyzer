@@ -27,3 +27,7 @@ def exportYahooAssetData(l):
 def importFile(fileName):
     with open("data\\"+fileName+".json", "r") as file:
         return json.loads(file.read())
+    
+def exportFile(fileName,l):
+    with open("data\\"+fileName+".json", "w") as file:
+        json.dump(l, file, indent=1)

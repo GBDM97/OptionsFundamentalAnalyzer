@@ -1,6 +1,6 @@
 import yfinance as yf
 
-from filesUtils import exportYahooAssetData, importTradingviewAssets
+from filesUtils import exportYahooAssetData, importFile
 
 def generateData(index, ticker):
     data = yf.download(ticker, period="62d", interval="1d")
@@ -15,8 +15,8 @@ def generateData(index, ticker):
 
     print(str(index) + ' ===> ' + ticker)
     spike_ratio = volatility_now/avg_volatility_62d
-    if spike_ratio < 1.4 and spike_ratio > 0.5:
-        return None
+    # if spike_ratio < 1.4 and spike_ratio > 0.5:
+    #     return None
     return [
         ticker,
         index+1,
@@ -25,7 +25,7 @@ def generateData(index, ticker):
     ]
 
 if __name__ == "__main__":
-    tickers = importTradingviewAssets()
+    tickers = importFile('inputAssetsArray')[172:173]
     results = []
     errors = []
     for i,v in enumerate(tickers):
@@ -37,5 +37,4 @@ if __name__ == "__main__":
             errors.append(error)
             continue
     exportYahooAssetData(results)
-    print('Errors: '+errors)
     print('Data exported!')
